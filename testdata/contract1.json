@@ -1,0 +1,7 @@
+{
+  "event": "create",
+  "payload": {
+    "contractKey": "contractKey1",
+    "active": true
+  }
+}

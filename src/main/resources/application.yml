@@ -1,0 +1,86 @@
+spring:
+  cloud:
+    stream:
+      bindings:
+#      party
+        party_in:
+          destination: party
+        party_process_out:
+          destination: party_process_queue
+        party_process_out_role:
+          destination: party_process_queue
+        party_process_in:
+          destination: party_process_queue
+        party_process_in_role:
+          destination: party_process_queue
+#      role
+        role_in:
+          destination: role
+        role_process_out:
+          destination: role_process_queue
+        role_process_out_party_1:
+          destination: role_process_queue
+        role_process_out_party_2:
+          destination: role_process_queue
+        role_process_in:
+          destination: role_process_queue
+#      contract
+        contract_in:
+          destination: contract
+        contract_process_out:
+          destination: contract_process_queue
+        contract_process_out_role:
+          destination: contract_process_queue
+        contract_process_in:
+          destination: contract_process_queue
+#      correlated
+        correlated_in:
+          destination: correlated
+        correlated_out_party:
+          destination: correlated
+        correlated_out_role:
+          destination: correlated
+        correlated_out_contract:
+          destination: correlated
+      kafka:
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.springframework.kafka.support.serializer.JsonSerde
+            serde-error: logandcontinue
+          bindings:
+#          party
+            party_in:
+              consumer:
+                application-id: party_in_app
+            party_process_in:
+              consumer:
+                application-id: party_process_in_app
+            party_process_in_role:
+              consumer:
+                application-id: party_process_in_role_app
+#          role
+            role_in:
+              consumer:
+                application-id: role_in_app
+            role_process_in:
+              consumer:
+                application-id: role_process_in_app
+#          contract
+            contract_in:
+              consumer:
+                application-id: contract_in_app
+            contract_process_in:
+              consumer:
+                application-id: contract_process_in_app
+#          correlated
+            correlated_in:
+              consumer:
+                application-id: correlated_in_app
+logging:
+  level:
+    com.github.wpik: debug

@@ -1,0 +1,7 @@
+{
+  "event": "PartyCreateEvent",
+  "payload": {
+    "partyKey": "partyKey1",
+    "name": "Party 1"
+  }
+}

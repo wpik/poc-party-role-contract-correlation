@@ -1,0 +1,6 @@
+{
+  "event": "PartyDeleteEvent",
+  "payload": {
+    "partyKey": "partyKey1"
+  }
+}
