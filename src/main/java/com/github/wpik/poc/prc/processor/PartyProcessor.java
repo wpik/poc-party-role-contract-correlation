@@ -40,7 +40,7 @@ public class PartyProcessor {
                 .flatMapValues(this::handlePartyEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
-                        (k, v) -> v instanceof IAmInDbEvent,
+                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent,
                         (k, v) -> v instanceof CorrelatedOperationEvent);
     }
 
@@ -88,6 +88,8 @@ public class PartyProcessor {
 
     private Iterable<AbstractEvent> handleEvent(PartyDeleteEvent event) {
         var partyKey = event.getPayload().getPartyKey();
+
+        partyRepository.deleteById(partyKey);
 
         Iterable<Role> roles = roleRepository.findByPartyKey(partyKey);
 
