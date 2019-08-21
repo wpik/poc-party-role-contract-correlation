@@ -17,6 +17,11 @@ public class RoleCreateEvent extends AbstractEvent {
         this.payload = payload;
     }
 
+    @Override
+    public String getKey() {
+        return payload.getRoleKey();
+    }
+
     @NonNull
     private Role payload;
 }

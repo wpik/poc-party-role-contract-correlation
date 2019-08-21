@@ -24,7 +24,7 @@ public interface Topics {
     String CONTRACT_PROCESS_IN = "contract_process_in";
 
     String CORRELATED_OUT_PARTY = "correlated_out_party";
-//    String CORRELATED_OUT_ROLE = "correlated_out_role";
+    String CORRELATED_OUT_ROLE = "correlated_out_role";
 //    String CORRELATED_OUT_CONTRACT = "correlated_out_contract";
 
     String CORRELATED_IN = "correlated_in";
@@ -77,8 +77,8 @@ public interface Topics {
     @Output(CORRELATED_OUT_PARTY)
     KStream<?, ?> correlatedOutParty();
 
-//    @Output(CORRELATED_OUT_ROLE)
-//    KStream<?, ?> correlatedOutRole();
+    @Output(CORRELATED_OUT_ROLE)
+    KStream<?, ?> correlatedOutRole();
 
 //    @Output(CORRELATED_OUT_CONTRACT)
 //    KStream<?, ?> correlatedOutContract();

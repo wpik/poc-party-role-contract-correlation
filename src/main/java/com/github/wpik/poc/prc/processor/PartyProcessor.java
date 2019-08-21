@@ -37,12 +37,10 @@ public class PartyProcessor {
         var branches = input
                 .mapValues(temporaryConverter::stringToPartyEvent)
                 .flatMapValues(this::handlePartyEvent)
+                .selectKey((k, v) -> v.getKey())
                 .branch(
                         (k, v) -> v instanceof IAmInDbEvent,
                         (k, v) -> v instanceof CorrelatedOperationEvent);
-
-        branches[0] = branches[0].selectKey((k, v) -> ((IAmInDbEvent) v).getRoleKey());
-        branches[1] = branches[1].selectKey((k, v) -> ((CorrelatedOperationEvent) v).getPayload());
 
         return branches;
     }

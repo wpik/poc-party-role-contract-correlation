@@ -3,8 +3,7 @@ package com.github.wpik.poc.prc.filter;
 import com.github.wpik.poc.prc.TemporaryConverter;
 import com.github.wpik.poc.prc.Topics;
 import com.github.wpik.poc.prc.events.AbstractEvent;
-import com.github.wpik.poc.prc.events.ContractEvent;
-import com.github.wpik.poc.prc.events.PartyCreateEvent;
+import com.github.wpik.poc.prc.events.ContractCreateEvent;
 import com.github.wpik.poc.prc.events.RoleCreateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,7 @@ public class Filters {
     public KStream<String, AbstractEvent> filterParty(@Input(Topics.PARTY_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Party filter received: {}-{}", k, v))
-                .mapValues(temporaryConverter::stringToPartyEvent);
+                .mapValues(temporaryConverter::decodeEvent);
 //                .filter((k, v) -> v instanceof PartyCreateEvent)
 //                .mapValues(v -> (PartyCreateEvent) v)
 //                .filter((key, partyEvent) -> partyEvent != null)
@@ -60,14 +59,14 @@ public class Filters {
 
     @StreamListener
     @SendTo(Topics.CONTRACT_PROCESS_OUT)
-    public KStream<String, ContractEvent> filterContract(@Input(Topics.CONTRACT_IN) KStream<String, String> input) {
+    public KStream<String, ContractCreateEvent> filterContract(@Input(Topics.CONTRACT_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Contract filter received: {}-{}", k, v))
                 .mapValues(temporaryConverter::stringToContractEvent)
-                .filter((key, contractEvent) -> contractEvent != null)
-                .filter((key, contractEvent) -> contractEvent.getPayload() != null)
-                .filter((key, contractEvent) -> keyIsValid(contractEvent.getPayload().getContractKey()))
-                .filter((key, contractEvent) -> contractEvent.getPayload().isActive());
+                .filter((key, contractCreateEvent) -> contractCreateEvent != null)
+                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload() != null)
+                .filter((key, contractCreateEvent) -> keyIsValid(contractCreateEvent.getPayload().getContractKey()))
+                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload().isActive());
     }
 
     private boolean keyIsValid(String key) {

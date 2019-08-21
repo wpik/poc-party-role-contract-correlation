@@ -26,7 +26,7 @@ public class RoleProcessor {
     private final RoleRepository roleRepository;
 
     @StreamListener
-    @SendTo({Topics.PARTY_PROCESS_OUT_ROLE, Topics.CONTRACT_PROCESS_OUT_ROLE})
+    @SendTo({Topics.PARTY_PROCESS_OUT_ROLE, Topics.CONTRACT_PROCESS_OUT_ROLE, Topics.CORRELATED_OUT_ROLE})
     public KStream<String, AreYouInDbEvent>[] processRole(@Input(Topics.ROLE_PROCESS_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Received: key={}, value={}", k, v))
@@ -40,7 +40,8 @@ public class RoleProcessor {
                 .selectKey((k, v) -> v.getEntityName())
                 .branch(
                         (k, v) -> v.getEntityName().equals("party"),
-                        (k, v) -> v.getEntityName().equals("contract")
+                        (k, v) -> v.getEntityName().equals("contract"),
+                        (k, v) -> false
                 );
     }
 

@@ -17,6 +17,11 @@ public class PartyUpdateEvent extends AbstractEvent {
         this.payload = payload;
     }
 
+    @Override
+    public String getKey() {
+        return getPayload().getPartyKey();
+    }
+
     @NonNull
     private Party payload;
 }

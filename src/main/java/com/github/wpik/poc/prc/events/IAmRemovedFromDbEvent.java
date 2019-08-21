@@ -18,6 +18,11 @@ public class IAmRemovedFromDbEvent extends AbstractEvent {
         this.roleKey = roleKey;
     }
 
+    @Override
+    public String getKey() {
+        return roleKey;
+    }
+
     @NonNull
     private String entityName;
     @NonNull

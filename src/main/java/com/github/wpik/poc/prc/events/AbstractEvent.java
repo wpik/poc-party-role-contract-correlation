@@ -8,4 +8,8 @@ import lombok.*;
 public class AbstractEvent {
     @NonNull
     private String event;
+
+    public String getKey() {
+        return "";
+    }
 }

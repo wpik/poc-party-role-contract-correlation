@@ -2,7 +2,7 @@ package com.github.wpik.poc.prc.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.wpik.poc.prc.events.ContractEvent;
+import com.github.wpik.poc.prc.events.ContractCreateEvent;
 import com.github.wpik.poc.prc.events.PartyCreateEvent;
 import com.github.wpik.poc.prc.events.RoleCreateEvent;
 import lombok.RequiredArgsConstructor;
@@ -41,9 +41,9 @@ public class EventController {
 
     @PostMapping("/contract")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    void ingestContract(@Valid @RequestBody ContractEvent contractEvent) throws JsonProcessingException {
-        log.info("Received {}", contractEvent);
-        sendToKafka("contract", contractEvent.getPayload().getContractKey(), contractEvent);
+    void ingestContract(@Valid @RequestBody ContractCreateEvent contractCreateEvent) throws JsonProcessingException {
+        log.info("Received {}", contractCreateEvent);
+        sendToKafka("contract", contractCreateEvent.getPayload().getContractKey(), contractCreateEvent);
     }
 
     private void sendToKafka(String topic, String key, Object value) throws JsonProcessingException {

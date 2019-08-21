@@ -18,6 +18,11 @@ public class AreYouInDbEvent extends AbstractEvent {
         this.roleKey = roleKey;
     }
 
+    @Override
+    public String getKey() {
+        return entityKey;
+    }
+
     @NonNull
     private String entityName;
     @NonNull

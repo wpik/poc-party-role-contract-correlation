@@ -17,6 +17,11 @@ public class PartyDeleteEvent extends AbstractEvent {
         this.payload=payload;
     }
 
+    @Override
+    public String getKey() {
+        return payload.getPartyKey();
+    }
+
     @NonNull
     private PartyDeletePayload payload;
 }

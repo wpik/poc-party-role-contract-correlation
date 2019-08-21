@@ -16,6 +16,11 @@ public class CorrelatedOperationEvent extends AbstractEvent {
         this.payload = payload;
     }
 
+    @Override
+    public String getKey() {
+        return payload;
+    }
+
     @NonNull
     private String payload;
 }

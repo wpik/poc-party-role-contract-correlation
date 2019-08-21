@@ -26,6 +26,11 @@ public class IAmInDbEvent extends AbstractEvent {
         );
     }
 
+    @Override
+    public String getKey() {
+        return roleKey;
+    }
+
     @NonNull
     private String entityName;
     @NonNull
