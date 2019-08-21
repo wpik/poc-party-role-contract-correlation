@@ -1,0 +1,9 @@
+{
+  "event": "RoleUpdateEvent",
+  "payload": {
+    "roleKey": "rk1",
+    "partyKey": "pk1",
+    "contractKey": "ck1",
+    "type": 2
+  }
+}

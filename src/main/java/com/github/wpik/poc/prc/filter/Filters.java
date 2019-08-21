@@ -42,19 +42,19 @@ public class Filters {
 
     @StreamListener
     @SendTo(Topics.ROLE_PROCESS_OUT)
-    public KStream<String, RoleCreateEvent> filterRole(@Input(Topics.ROLE_IN) KStream<String, String> input) {
+    public KStream<String, AbstractEvent> filterRole(@Input(Topics.ROLE_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Role filter received: key={}, value={}", k, v))
-                .mapValues(temporaryConverter::decodeEvent)
-                .filter((k, v) -> v instanceof RoleCreateEvent)
-                .mapValues(v -> (RoleCreateEvent) v)
-                .filter((key, roleEvent) -> roleEvent != null)
-                .filter((key, roleEvent) -> roleEvent.getPayload() != null)
-                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getRoleKey()))
-                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getPartyKey()))
-                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getContractKey()))
-                .filter((key, roleEvent) -> roleEvent.getPayload().getType() != null)
-                .filter((key, roleEvent) -> roleEvent.getPayload().getType() <= 2);
+                .mapValues(temporaryConverter::decodeEvent);
+//                .filter((k, v) -> v instanceof RoleCreateEvent)
+//                .mapValues(v -> (RoleCreateEvent) v)
+//                .filter((key, roleEvent) -> roleEvent != null)
+//                .filter((key, roleEvent) -> roleEvent.getPayload() != null)
+//                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getRoleKey()))
+//                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getPartyKey()))
+//                .filter((key, roleEvent) -> keyIsValid(roleEvent.getPayload().getContractKey()))
+//                .filter((key, roleEvent) -> roleEvent.getPayload().getType() != null)
+//                .filter((key, roleEvent) -> roleEvent.getPayload().getType() <= 2);
     }
 
     @StreamListener
