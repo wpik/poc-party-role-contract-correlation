@@ -46,6 +46,8 @@ public class RoleProcessor {
             return handleEvent((RoleCreateEvent) event);
         } else if (event instanceof RoleUpdateEvent) {
             return handleEvent((RoleUpdateEvent) event);
+        } else if (event instanceof RoleDeleteEvent) {
+            return handleEvent((RoleDeleteEvent) event);
         }
 
         return List.of();
@@ -87,5 +89,21 @@ public class RoleProcessor {
         } else {
             return List.of();
         }
+    }
+
+    private Iterable<AbstractEvent> handleEvent(RoleDeleteEvent event) {
+        String roleKey = event.getPayload().getRoleKey();
+
+        Optional<Role> roleInDbOptional = roleRepository.findById(roleKey);
+
+        //FIXME better optional handling
+//        if (roleInDbOptional.isPresent()) {
+//            Role roleInDb = roleInDbOptional.get();
+            //TODO notify party/contract to remove from correlated
+//        }
+
+        roleRepository.deleteById(roleKey);
+
+        return List.of();
     }
 }
