@@ -30,14 +30,14 @@ public class RoleProcessor {
     public KStream<String, AreYouInDbEvent>[] processRole(@Input(Topics.ROLE_PROCESS_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Received: key={}, value={}", k, v))
-                .mapValues(temporaryConverter::stringToRoleEvent)
+                .mapValues(temporaryConverter::decodeEvent)
                 .filter((k, v) -> v instanceof RoleCreateEvent)
                 .mapValues(v -> (RoleCreateEvent) v)
                 .peek((k, v) -> log.debug("IN: Role processor received {}-{}", k, v))
                 .mapValues(this::updateDbAndReturnRoleFromDb)
                 .flatMapValues(this::mapToAreYouInDb)
                 .filter((k, v) -> v != null)
-                .selectKey((k, v) -> v.getEntityName())
+                .selectKey((k, v) -> v.getKey())
                 .branch(
                         (k, v) -> v.getEntityName().equals("party"),
                         (k, v) -> v.getEntityName().equals("contract"),
@@ -49,7 +49,8 @@ public class RoleProcessor {
         Optional<Role> roleDbOptional = roleRepository.findById(event.getPayload().getRoleKey());
         if (roleDbOptional.isPresent()) {
             Role roleDb = roleDbOptional.get();
-            if (event.getPayload().getPartyKey() != roleDb.getPartyKey() || event.getPayload().getContractKey() != roleDb.getContractKey()) {
+            if (!event.getPayload().getPartyKey().equals(roleDb.getPartyKey()) ||
+                    !event.getPayload().getContractKey().equals(roleDb.getContractKey())) {
                 log.warn("Received role event with mismatched partyKey/contractKey");
             }
             roleDb.setType(event.getPayload().getType());

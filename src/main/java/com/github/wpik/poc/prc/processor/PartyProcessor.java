@@ -32,34 +32,34 @@ public class PartyProcessor {
     private final RoleRepository roleRepository;
 
     @StreamListener
-    @SendTo({Topics.ROLE_PROCESS_OUT_PARTY_1, Topics.CORRELATED_OUT_PARTY})
+    @SendTo({Topics.ROLE_PROCESS_OUT_PARTY, Topics.CORRELATED_OUT_PARTY})
     public KStream<String, AbstractEvent>[] processParty(@Input(Topics.PARTY_PROCESS_IN) KStream<String, String> input) {
-        var branches = input
-                .mapValues(temporaryConverter::stringToPartyEvent)
+        return input
+                .peek((k, v) -> log.debug("Received: key={}, value={}", k, v))
+                .mapValues(temporaryConverter::decodeEvent)
                 .flatMapValues(this::handlePartyEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
                         (k, v) -> v instanceof IAmInDbEvent,
                         (k, v) -> v instanceof CorrelatedOperationEvent);
-
-        return branches;
     }
 
     private Iterable<AbstractEvent> handlePartyEvent(AbstractEvent event) {
         //FIXME those instanceof are ugly
         if (event instanceof PartyCreateEvent) {
-            return handleCreateEvent((PartyCreateEvent) event);
+            return handleEvent((PartyCreateEvent) event);
         } else if (event instanceof PartyUpdateEvent) {
-            return handleUpdateEvent((PartyUpdateEvent) event);
+            return handleEvent((PartyUpdateEvent) event);
         } else if (event instanceof PartyDeleteEvent) {
-            return handleDeleteEvent((PartyDeleteEvent) event);
+            return handleEvent((PartyDeleteEvent) event);
+        } else if (event instanceof AreYouInDbEvent) {
+            return handleEvent((AreYouInDbEvent) event);
         }
 
         return List.of();
     }
 
-    private Iterable<AbstractEvent> handleCreateEvent(PartyCreateEvent event) {
-        log.info("handleCreateEvent {}", event);
+    private Iterable<AbstractEvent> handleEvent(PartyCreateEvent event) {
         Optional<Party> partyFromDb = partyRepository.findById(event.getPayload().getPartyKey());
 
         partyRepository.save(event.getPayload());
@@ -69,13 +69,11 @@ public class PartyProcessor {
                 .orElseGet(() -> roleRepository.findByPartyKey(event.getPayload().getPartyKey()));
 
         return StreamSupport.stream(roles.spliterator(), false)
-                .map(r -> new IAmInDbEvent("party", r.getRoleKey(), event.getPayload().getPartyKey()))
+                .map(r -> new IAmInDbEvent("party", r.getPartyKey(), r.getRoleKey()))
                 .collect(toList());
     }
 
-    private Iterable<AbstractEvent> handleUpdateEvent(PartyUpdateEvent event) {
-        log.info("handleUpdateEvent {}", event);
-
+    private Iterable<AbstractEvent> handleEvent(PartyUpdateEvent event) {
         Optional<Party> partyFromDb = partyRepository.findById(event.getPayload().getPartyKey());
 
         //FIXME better optional handling
@@ -88,9 +86,7 @@ public class PartyProcessor {
         return List.of();
     }
 
-    private Iterable<AbstractEvent> handleDeleteEvent(PartyDeleteEvent event) {
-        log.info("handleDeleteEvent {}", event);
-
+    private Iterable<AbstractEvent> handleEvent(PartyDeleteEvent event) {
         var partyKey = event.getPayload().getPartyKey();
 
         Iterable<Role> roles = roleRepository.findByPartyKey(partyKey);
@@ -105,22 +101,10 @@ public class PartyProcessor {
         return resultEvents;
     }
 
-    @StreamListener
-    @SendTo(Topics.ROLE_PROCESS_OUT_PARTY_2)
-    public KStream<String, IAmInDbEvent> processPartyAreYouInDb(@Input(Topics.PARTY_PROCESS_IN_ROLE) KStream<String, String> input) {
-        return input
-                .mapValues(temporaryConverter::stringToPartyEvent)
-                .filter((k, v) -> v instanceof AreYouInDbEvent)
-                .mapValues(v -> (AreYouInDbEvent) v)
-                .peek((k, v) -> log.debug("PARTY_PROCESS_IN_ROLE: Party processor received {}-{}", k, v))
-                .mapValues(this::checkPartyInDbAndCreateResponse)
-                .filter((k, v) -> v != null);
-    }
-
-    private IAmInDbEvent checkPartyInDbAndCreateResponse(AreYouInDbEvent event) {
+    private Iterable<AbstractEvent> handleEvent(AreYouInDbEvent event) {
         return partyRepository
                 .findById(event.getEntityKey())
-                .map(x -> IAmInDbEvent.from(event))
-                .orElse(null);
+                .map(x -> List.<AbstractEvent>of(IAmInDbEvent.from(event)))
+                .orElse(List.of());
     }
 }

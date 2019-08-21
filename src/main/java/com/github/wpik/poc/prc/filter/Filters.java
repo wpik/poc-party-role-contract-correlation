@@ -22,14 +22,14 @@ import java.util.regex.Pattern;
 public class Filters {
     private final TemporaryConverter temporaryConverter;
 
-    private Pattern KEY_PATTERN = Pattern.compile("^(party|role|contract)Key[0-9]*$");
+    private Pattern KEY_PATTERN = Pattern.compile("^(pk|rk|ck)[0-9]*$");
     private Pattern PARTY_NAME_PATTERN = Pattern.compile("^[A-Z].*$");
 
     @StreamListener
     @SendTo(Topics.PARTY_PROCESS_OUT)
     public KStream<String, AbstractEvent> filterParty(@Input(Topics.PARTY_IN) KStream<String, String> input) {
         return input
-                .peek((k, v) -> log.debug("Party filter received: {}-{}", k, v))
+                .peek((k, v) -> log.debug("Party filter received: key={}, value={}", k, v))
                 .mapValues(temporaryConverter::decodeEvent);
 //                .filter((k, v) -> v instanceof PartyCreateEvent)
 //                .mapValues(v -> (PartyCreateEvent) v)
@@ -44,8 +44,8 @@ public class Filters {
     @SendTo(Topics.ROLE_PROCESS_OUT)
     public KStream<String, RoleCreateEvent> filterRole(@Input(Topics.ROLE_IN) KStream<String, String> input) {
         return input
-                .peek((k, v) -> log.debug("Role filter received: {}-{}", k, v))
-                .mapValues(temporaryConverter::stringToRoleEvent)
+                .peek((k, v) -> log.debug("Role filter received: key={}, value={}", k, v))
+                .mapValues(temporaryConverter::decodeEvent)
                 .filter((k, v) -> v instanceof RoleCreateEvent)
                 .mapValues(v -> (RoleCreateEvent) v)
                 .filter((key, roleEvent) -> roleEvent != null)
@@ -59,14 +59,14 @@ public class Filters {
 
     @StreamListener
     @SendTo(Topics.CONTRACT_PROCESS_OUT)
-    public KStream<String, ContractCreateEvent> filterContract(@Input(Topics.CONTRACT_IN) KStream<String, String> input) {
+    public KStream<String, AbstractEvent> filterContract(@Input(Topics.CONTRACT_IN) KStream<String, String> input) {
         return input
-                .peek((k, v) -> log.debug("Contract filter received: {}-{}", k, v))
-                .mapValues(temporaryConverter::stringToContractEvent)
-                .filter((key, contractCreateEvent) -> contractCreateEvent != null)
-                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload() != null)
-                .filter((key, contractCreateEvent) -> keyIsValid(contractCreateEvent.getPayload().getContractKey()))
-                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload().isActive());
+                .peek((k, v) -> log.debug("Contract filter received: key={}, value={}", k, v))
+                .mapValues(temporaryConverter::decodeEvent);
+//                .filter((key, contractCreateEvent) -> contractCreateEvent != null)
+//                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload() != null)
+//                .filter((key, contractCreateEvent) -> keyIsValid(contractCreateEvent.getPayload().getContractKey()))
+//                .filter((key, contractCreateEvent) -> contractCreateEvent.getPayload().isActive());
     }
 
     private boolean keyIsValid(String key) {

@@ -12,11 +12,9 @@ public interface Topics {
     String PARTY_PROCESS_OUT = "party_process_out";
     String PARTY_PROCESS_OUT_ROLE = "party_process_out_role";
     String PARTY_PROCESS_IN = "party_process_in";
-    String PARTY_PROCESS_IN_ROLE = "party_process_in_role";
 
     String ROLE_PROCESS_OUT = "role_process_out";
-    String ROLE_PROCESS_OUT_PARTY_1 = "role_process_out_party_1";
-    String ROLE_PROCESS_OUT_PARTY_2 = "role_process_out_party_2";
+    String ROLE_PROCESS_OUT_PARTY = "role_process_out_party";
     String ROLE_PROCESS_IN = "role_process_in";
 
     String CONTRACT_PROCESS_OUT = "contract_process_out";
@@ -41,9 +39,6 @@ public interface Topics {
     @Input(PARTY_PROCESS_IN)
     KStream<?, ?> partyProcessQueueIn();
 
-    @Input(PARTY_PROCESS_IN_ROLE)
-    KStream<?, ?> partyProcessQueueInRole();
-
     @Output(PARTY_PROCESS_OUT)
     KStream<?, ?> partyProcessQueueOut();
 
@@ -56,11 +51,8 @@ public interface Topics {
     @Output(ROLE_PROCESS_OUT)
     KStream<?, ?> roleProcessQueueOut();
 
-    @Output(ROLE_PROCESS_OUT_PARTY_1)
-    KStream<?, ?> roleProcessQueueOutParty1();
-
-    @Output(ROLE_PROCESS_OUT_PARTY_2)
-    KStream<?, ?> roleProcessQueueOutParty2();
+    @Output(ROLE_PROCESS_OUT_PARTY)
+    KStream<?, ?> roleProcessQueueOutParty();
 
     @Input(CONTRACT_PROCESS_IN)
     KStream<?, ?> contractProcessQueueIn();

@@ -11,16 +11,12 @@ spring:
           destination: party_process_queue
         party_process_in:
           destination: party_process_queue
-        party_process_in_role:
-          destination: party_process_queue
 #      role
         role_in:
           destination: role
         role_process_out:
           destination: role_process_queue
-        role_process_out_party_1:
-          destination: role_process_queue
-        role_process_out_party_2:
+        role_process_out_party:
           destination: role_process_queue
         role_process_in:
           destination: role_process_queue
