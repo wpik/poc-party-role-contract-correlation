@@ -23,4 +23,8 @@ public class Party {
     public void decrementTriplesCounter() {
         triplesCounter--;
     }
+
+    public void update(Party other) {
+        this.name = other.name;
+    }
 }

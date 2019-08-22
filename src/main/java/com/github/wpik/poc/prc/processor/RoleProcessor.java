@@ -140,6 +140,8 @@ public class RoleProcessor {
         return roleRepository
                 .findById(event.getRoleKey())
                 .map(role -> {
+                    boolean alreadyWasPublishable = isRolePublishable(role);
+
                     if (event.getEntityName().equals("party")) {
                         role.setPartyPublished(true);
                         roleRepository.save(role);
@@ -147,12 +149,16 @@ public class RoleProcessor {
                         role.setContractPublished(true);
                         roleRepository.save(role);
                     }
-                    if (role.isPartyPublished() && role.isContractPublished()) {
+                    if (isRolePublishable(role) && !alreadyWasPublishable) {
                         return List.<AbstractEvent>of(new PublishEvent(role.toString()));
                     } else {
                         return List.<AbstractEvent>of();
                     }
                 })
                 .orElse(List.of());
+    }
+
+    private boolean isRolePublishable(Role role) {
+        return role.isPartyPublished() && role.isContractPublished();
     }
 }

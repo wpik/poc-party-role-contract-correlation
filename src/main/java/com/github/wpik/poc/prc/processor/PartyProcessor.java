@@ -82,6 +82,8 @@ public class PartyProcessor {
         return partyRepository
                 .findById(event.getPayload().getPartyKey())
                 .map(party -> {
+                    party.update(event.getPayload());
+                    partyRepository.save(party);
                     if (party.getTriplesCounter() > 0) {
                         return List.<AbstractEvent>of(new PublishEvent(party.toString()));
                     } else {

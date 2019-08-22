@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Id;
 public class Contract {
     @Id
     private String contractKey;
+    private String company;
     private boolean active;
 
     @JsonIgnore
@@ -22,5 +23,10 @@ public class Contract {
 
     public void decrementTriplesCounter() {
         triplesCounter--;
+    }
+
+    public void update(Contract other) {
+        this.company = other.company;
+        this.active = other.active;
     }
 }

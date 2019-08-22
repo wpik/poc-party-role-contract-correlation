@@ -82,6 +82,8 @@ public class ContractProcessor {
         return contractRepository
                 .findById(event.getPayload().getContractKey())
                 .map(contract -> {
+                    contract.update(event.getPayload());
+                    contractRepository.save(contract);
                     if (contract.getTriplesCounter() > 0) {
                         return List.<AbstractEvent>of(new PublishEvent(contract.toString()));
                     } else {
