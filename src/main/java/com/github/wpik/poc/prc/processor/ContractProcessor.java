@@ -17,9 +17,9 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
@@ -66,32 +66,41 @@ public class ContractProcessor {
     }
 
     private Iterable<AbstractEvent> handleEvent(ContractCreateEvent event) {
-        Optional<Contract> contractFromDb = contractRepository.findById(event.getPayload().getContractKey());
-
-        contractRepository.save(event.getPayload());
-
-        Iterable<Role> roles = contractFromDb
-                .map((p) -> (Iterable) Collections.emptyList())
-                .orElseGet(() -> roleRepository.findByContractKey(event.getPayload().getContractKey()));
-
-        return StreamSupport.stream(roles.spliterator(), false)
-                .map(r -> new IAmInDbEvent("contract", r.getContractKey(), r.getRoleKey()))
-                .collect(toList());
+        return handleCreateUpdateEvent(event.getPayload());
     }
 
     private Iterable<AbstractEvent> handleEvent(ContractUpdateEvent event) {
-        return contractRepository
-                .findById(event.getPayload().getContractKey())
-                .map(contract -> {
-                    contract.update(event.getPayload());
-                    contractRepository.save(contract);
-                    if (contract.getTriplesCounter() > 0) {
-                        return List.<AbstractEvent>of(new PublishEvent(contract.toString()));
-                    } else {
-                        return List.<AbstractEvent>of();
-                    }
-                })
-                .orElse(List.of());
+        return handleCreateUpdateEvent(event.getPayload());
+    }
+
+    private Iterable<AbstractEvent> handleCreateUpdateEvent(Contract payload) {
+        return contractRepository.findById(payload.getContractKey())
+                .map(handleCreateUpdateEventWhenContractInDb(payload))
+                .orElseGet(handleCreateUpdateEventWhenContractNotInDb(payload));
+    }
+
+    private Function<Contract, List<AbstractEvent>> handleCreateUpdateEventWhenContractInDb(Contract payload) {
+        return contract -> {
+            contract.update(payload);
+            contractRepository.save(contract);
+            if (contract.getTriplesCounter() > 0) {
+                return List.of(new PublishEvent(contract.toString()));
+            } else {
+                return List.of();
+            }
+        };
+    }
+
+    private Supplier<List<AbstractEvent>> handleCreateUpdateEventWhenContractNotInDb(Contract payload) {
+        return () -> {
+            contractRepository.save(payload);
+
+            Iterable<Role> roles = roleRepository.findByContractKey(payload.getContractKey());
+
+            return StreamSupport.stream(roles.spliterator(), false)
+                    .map(r -> new IAmInDbEvent("contract", r.getContractKey(), r.getRoleKey()))
+                    .collect(toList());
+        };
     }
 
     private Iterable<AbstractEvent> handleEvent(ContractDeleteEvent event) {

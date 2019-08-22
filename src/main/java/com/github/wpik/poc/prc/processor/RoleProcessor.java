@@ -20,6 +20,11 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 @RequiredArgsConstructor
@@ -63,42 +68,47 @@ public class RoleProcessor {
         return List.of();
     }
 
+
     private Iterable<AbstractEvent> handleEvent(RoleCreateEvent event) {
-        Role role = updateRoleInDbAndReturnIt(event.getPayload());
-
-        var result = new ArrayList<AbstractEvent>();
-        if (!role.isPartyInDb()) {
-            result.add(new AreYouInDbEvent("party", role.getPartyKey(), role.getRoleKey()));
-        }
-        if (!role.isContractInDb()) {
-            result.add(new AreYouInDbEvent("contract", role.getContractKey(), role.getRoleKey()));
-        }
-        return result;
-    }
-
-    private Role updateRoleInDbAndReturnIt(Role role) {
-        Optional<Role> roleDbOptional = roleRepository.findById(role.getRoleKey());
-        if (roleDbOptional.isPresent()) {
-            Role roleDb = roleDbOptional.get();
-            if (!role.getPartyKey().equals(roleDb.getPartyKey()) ||
-                    !role.getContractKey().equals(roleDb.getContractKey())) {
-                log.warn("Received role event with mismatched partyKey/contractKey");
-            }
-            roleDb.setType(role.getType());
-            return roleRepository.save(roleDb);
-        } else {
-            return roleRepository.save(role);
-        }
+        return handleCreateUpdateEvent(event.getPayload());
     }
 
     private Iterable<AbstractEvent> handleEvent(RoleUpdateEvent event) {
-        Role role = updateRoleInDbAndReturnIt(event.getPayload());
+        return handleCreateUpdateEvent(event.getPayload());
+    }
 
-        if (role.isPartyPublished() && role.isContractPublished()) {
-            return List.of(new PublishEvent(role.toString()));
-        } else {
-            return List.of();
-        }
+    private Iterable<AbstractEvent> handleCreateUpdateEvent(Role payload) {
+        return roleRepository.findById(payload.getRoleKey())
+                .map(handleCreateUpdateEventWhenPartyInDb(payload))
+                .orElseGet(handleCreateUpdateEventWhenNoPartyInDb(payload));
+    }
+
+    private Function<Role, List<AbstractEvent>> handleCreateUpdateEventWhenPartyInDb(Role payload) {
+        return role -> {
+            role.update(payload);
+            roleRepository.save(role);
+
+            if (role.isPartyPublished() && role.isContractPublished()) {
+                return List.of(new PublishEvent(role.toString()));
+            } else {
+                return List.of();
+            }
+        };
+    }
+
+    private Supplier<List<AbstractEvent>> handleCreateUpdateEventWhenNoPartyInDb(Role payload) {
+        return () -> {
+            Role role = roleRepository.save(payload);
+
+            var result = new ArrayList<AbstractEvent>();
+            if (!role.isPartyInDb()) {
+                result.add(new AreYouInDbEvent("party", role.getPartyKey(), role.getRoleKey()));
+            }
+            if (!role.isContractInDb()) {
+                result.add(new AreYouInDbEvent("contract", role.getContractKey(), role.getRoleKey()));
+            }
+            return result;
+        };
     }
 
     private Iterable<AbstractEvent> handleEvent(RoleDeleteEvent event) {

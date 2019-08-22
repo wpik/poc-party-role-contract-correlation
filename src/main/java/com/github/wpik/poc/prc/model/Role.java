@@ -20,4 +20,8 @@ public class Role {
     private boolean partyPublished;
     @JsonIgnore
     private boolean contractPublished;
+
+    public void update(Role other) {
+        this.type = other.type;
+    }
 }

@@ -17,9 +17,9 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
@@ -66,32 +66,41 @@ public class PartyProcessor {
     }
 
     private Iterable<AbstractEvent> handleEvent(PartyCreateEvent event) {
-        Optional<Party> partyFromDb = partyRepository.findById(event.getPayload().getPartyKey());
-
-        partyRepository.save(event.getPayload());
-
-        Iterable<Role> roles = partyFromDb
-                .map((p) -> (Iterable)Collections.emptyList())
-                .orElseGet(() -> roleRepository.findByPartyKey(event.getPayload().getPartyKey()));
-
-        return StreamSupport.stream(roles.spliterator(), false)
-                .map(r -> new IAmInDbEvent("party", r.getPartyKey(), r.getRoleKey()))
-                .collect(toList());
+        return handleCreateUpdateEvent(event.getPayload());
     }
 
     private Iterable<AbstractEvent> handleEvent(PartyUpdateEvent event) {
-        return partyRepository
-                .findById(event.getPayload().getPartyKey())
-                .map(party -> {
-                    party.update(event.getPayload());
-                    partyRepository.save(party);
-                    if (party.getTriplesCounter() > 0) {
-                        return List.<AbstractEvent>of(new PublishEvent(party.toString()));
-                    } else {
-                        return List.<AbstractEvent>of();
-                    }
-                })
-                .orElse(List.of());
+        return handleCreateUpdateEvent(event.getPayload());
+    }
+
+    private Iterable<AbstractEvent> handleCreateUpdateEvent(Party payload) {
+        return partyRepository.findById(payload.getPartyKey())
+                .map(handleCreateUpdateEventWhenPartyInDb(payload))
+                .orElseGet(handleCreateUpdateEventWhenNoPartyInDb(payload));
+    }
+
+    private Function<Party, List<AbstractEvent>> handleCreateUpdateEventWhenPartyInDb(Party payload) {
+        return party -> {
+            party.update(payload);
+            partyRepository.save(party);
+            if (party.getTriplesCounter() > 0) {
+                return List.of(new PublishEvent(party.toString()));
+            } else {
+                return List.of();
+            }
+        };
+    }
+
+    private Supplier<List<AbstractEvent>> handleCreateUpdateEventWhenNoPartyInDb(Party payload) {
+        return () -> {
+            partyRepository.save(payload);
+
+            Iterable<Role> roles = roleRepository.findByPartyKey(payload.getPartyKey());
+
+            return StreamSupport.stream(roles.spliterator(), false)
+                    .map(r -> new IAmInDbEvent("party", r.getPartyKey(), r.getRoleKey()))
+                    .collect(toList());
+        };
     }
 
     private Iterable<AbstractEvent> handleEvent(PartyDeleteEvent event) {
