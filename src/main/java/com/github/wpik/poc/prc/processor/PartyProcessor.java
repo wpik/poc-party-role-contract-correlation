@@ -15,6 +15,7 @@ import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public class PartyProcessor {
     private final RoleRepository roleRepository;
 
     @StreamListener
-    @SendTo({Topics.ROLE_PROCESS_OUT_PARTY, Topics.CORRELATED_OUT_PARTY})
+    @SendTo({Topics.ROLE_PROCESS_OUT_PARTY, Topics.PUBLISHED_OUT_PARTY})
     public KStream<String, AbstractEvent>[] processParty(@Input(Topics.PARTY_PROCESS_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Received: key={}, value={}", k, v))
@@ -41,7 +42,7 @@ public class PartyProcessor {
                 .selectKey((k, v) -> v.getKey())
                 .branch(
                         (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent,
-                        (k, v) -> v instanceof CorrelatedOperationEvent);
+                        (k, v) -> v instanceof PublishEvent || v instanceof UnpublishEvent);
     }
 
     private Iterable<AbstractEvent> handlePartyEvent(AbstractEvent event) {
@@ -54,6 +55,10 @@ public class PartyProcessor {
             return handleEvent((PartyDeleteEvent) event);
         } else if (event instanceof AreYouInDbEvent) {
             return handleEvent((AreYouInDbEvent) event);
+        } else if (event instanceof NewTripleEvent) {
+            return handleEvent((NewTripleEvent) event);
+        } else if (event instanceof DeleteTripleEvent) {
+            return handleEvent((DeleteTripleEvent) event);
         }
 
         return List.of();
@@ -74,16 +79,16 @@ public class PartyProcessor {
     }
 
     private Iterable<AbstractEvent> handleEvent(PartyUpdateEvent event) {
-        Optional<Party> partyFromDb = partyRepository.findById(event.getPayload().getPartyKey());
-
-        //FIXME better optional handling
-        if (partyFromDb.isPresent()) {
-            if (partyFromDb.get().getTriplesCounter() > 0) {
-                return List.of(new CorrelatedOperationEvent("Upsert " + partyFromDb.get().toString()));
-            }
-        }
-
-        return List.of();
+        return partyRepository
+                .findById(event.getPayload().getPartyKey())
+                .map(party -> {
+                    if (party.getTriplesCounter() > 0) {
+                        return List.<AbstractEvent>of(new PublishEvent(party.toString()));
+                    } else {
+                        return List.<AbstractEvent>of();
+                    }
+                })
+                .orElse(List.of());
     }
 
     private Iterable<AbstractEvent> handleEvent(PartyDeleteEvent event) {
@@ -98,7 +103,7 @@ public class PartyProcessor {
                 .map(e->(AbstractEvent)e)
                 .collect(toList());
 
-        resultEvents.add(new CorrelatedOperationEvent("Delete party: " + partyKey));
+        resultEvents.add(new UnpublishEvent("party", partyKey));
 
         return resultEvents;
     }
@@ -107,6 +112,39 @@ public class PartyProcessor {
         return partyRepository
                 .findById(event.getEntityKey())
                 .map(x -> List.<AbstractEvent>of(IAmInDbEvent.from(event)))
+                .orElse(List.of());
+    }
+
+    private Iterable<AbstractEvent> handleEvent(NewTripleEvent event) {
+        return partyRepository
+                .findById(event.getEntityKey())
+                .map(party -> {
+                    party.incrementTriplesCounter();
+                    partyRepository.save(party);
+
+                    List<AbstractEvent> resultEvents = new ArrayList<>();
+                    if (party.getTriplesCounter() == 1) {
+                        resultEvents.add(new PublishEvent(party.toString()));
+                    }
+                    resultEvents.add(new IAmPublishedEvent("party", party.getPartyKey(), event.getRoleKey()));
+                    return resultEvents;
+                })
+                .orElse(List.of());
+    }
+
+    private Iterable<AbstractEvent> handleEvent(DeleteTripleEvent event) {
+        return partyRepository
+                .findById(event.getEntityKey())
+                .map(party -> {
+                    party.decrementTriplesCounter();
+                    partyRepository.save(party);
+
+                    if (party.getTriplesCounter() == 0) {
+                        return List.<AbstractEvent>of(new UnpublishEvent("party", party.getPartyKey()));
+                    } else {
+                        return List.<AbstractEvent>of();
+                    }
+                })
                 .orElse(List.of());
     }
 }

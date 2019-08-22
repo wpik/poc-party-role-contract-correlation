@@ -26,7 +26,7 @@ public class RoleProcessor {
     private final RoleRepository roleRepository;
 
     @StreamListener
-    @SendTo({Topics.PARTY_PROCESS_OUT_ROLE, Topics.CONTRACT_PROCESS_OUT_ROLE, Topics.CORRELATED_OUT_ROLE})
+    @SendTo({Topics.PARTY_PROCESS_OUT_ROLE, Topics.CONTRACT_PROCESS_OUT_ROLE, Topics.PUBLISHED_OUT_ROLE})
     public KStream<String, AbstractEvent>[] processRole(@Input(Topics.ROLE_PROCESS_IN) KStream<String, String> input) {
         return input
                 .peek((k, v) -> log.debug("Received: key={}, value={}", k, v))
@@ -36,7 +36,7 @@ public class RoleProcessor {
                 .branch(
                         (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("party"),
                         (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("contract"),
-                        (k, v) -> v instanceof CorrelatedOperationEvent
+                        (k, v) -> v instanceof PublishEvent
                 );
     }
 
@@ -50,6 +50,8 @@ public class RoleProcessor {
             return handleEvent((RoleDeleteEvent) event);
         } else if (event instanceof IAmInDbEvent) {
             return handleEvent((IAmInDbEvent) event);
+        } else if (event instanceof IAmPublishedEvent) {
+            return handleEvent((IAmPublishedEvent) event);
         }
 
         return List.of();
@@ -86,8 +88,8 @@ public class RoleProcessor {
     private Iterable<AbstractEvent> handleEvent(RoleUpdateEvent event) {
         Role role = updateRoleInDbAndReturnIt(event.getPayload());
 
-        if (role.isPartyInCorrelated() && role.isContractInCorrelated()) {
-            return List.of(new CorrelatedOperationEvent("Upsert role " + role.toString()));
+        if (role.isPartyPublished() && role.isContractPublished()) {
+            return List.of(new PublishEvent(role.toString()));
         } else {
             return List.of();
         }
@@ -101,7 +103,7 @@ public class RoleProcessor {
         //FIXME better optional handling
 //        if (roleInDbOptional.isPresent()) {
 //            Role roleInDb = roleInDbOptional.get();
-            //TODO notify party/contract to remove from correlated
+            //TODO notify party/contract to unpublish themselves
 //        }
 
         roleRepository.deleteById(roleKey);
@@ -110,23 +112,45 @@ public class RoleProcessor {
     }
 
     private Iterable<AbstractEvent> handleEvent(IAmInDbEvent event) {
-        Optional<Role> roleOptional = roleRepository.findById(event.getRoleKey());
+        return roleRepository
+                .findById(event.getRoleKey())
+                .map(role -> {
+                    if (event.getEntityName().equals("party")) {
+                        role.setPartyInDb(true);
+                        roleRepository.save(role);
+                    } else if (event.getEntityName().equals("contract")) {
+                        role.setContractInDb(true);
+                        roleRepository.save(role);
+                    }
+                    if (role.isPartyInDb() && role.isContractInDb()) {
+                        return List.<AbstractEvent>of(
+                                new NewTripleEvent("party", role.getPartyKey(), role.getRoleKey()),
+                                new NewTripleEvent("contract", role.getContractKey(), role.getRoleKey())
+                        );
+                    } else {
+                        return List.<AbstractEvent>of();
+                    }
+                })
+                .orElse(List.of());
+    }
 
-        //FIXME better optional handling
-        if (roleOptional.isPresent()) {
-            if (event.getEntityName().equals("party")) {
-                roleOptional.get().setPartyInDb(true);
-                roleRepository.save(roleOptional.get());
-            } else if (event.getEntityName().equals("contract")) {
-                roleOptional.get().setContractInDb(true);
-                roleRepository.save(roleOptional.get());
-            } else {
-                log.error("Event received but unknown entityName, event={}", event);
-            }
-        } else {
-            log.error("Event received but role not in DB, event={}", event);
-        }
-
-        return List.of();
+    private Iterable<AbstractEvent> handleEvent(IAmPublishedEvent event) {
+        return roleRepository
+                .findById(event.getRoleKey())
+                .map(role -> {
+                    if (event.getEntityName().equals("party")) {
+                        role.setPartyPublished(true);
+                        roleRepository.save(role);
+                    } else if (event.getEntityName().equals("contract")) {
+                        role.setContractPublished(true);
+                        roleRepository.save(role);
+                    }
+                    if (role.isPartyPublished() && role.isContractPublished()) {
+                        return List.<AbstractEvent>of(new PublishEvent(role.toString()));
+                    } else {
+                        return List.<AbstractEvent>of();
+                    }
+                })
+                .orElse(List.of());
     }
 }

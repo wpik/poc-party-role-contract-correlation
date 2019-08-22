@@ -16,7 +16,7 @@ public class ContractProcessor {
     private final TemporaryConverter temporaryConverter;
 
     @StreamListener
-//    @SendTo(Topics.CORRELATED_OUT_CONTRACT)
+//    @SendTo(Topics.PUBLISHED_OUT_CONTRACT)
     public void processContract(@Input(Topics.CONTRACT_PROCESS_IN) KStream<String, String> input) {
         input.foreach((k, v) -> log.debug("Received: key={}, value={}", k, v));
     }

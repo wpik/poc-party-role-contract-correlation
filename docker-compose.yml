@@ -33,7 +33,7 @@ services:
       - kafka
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "party:1:1,role:1:1,contract:1:1,party_process_queue:1:1,role_process_queue:1:1,contract_process_queue:1:1,correlated:1:1"
+      KAFKA_CREATE_TOPICS: "party:1:1,role:1:1,contract:1:1,party_process_queue:1:1,role_process_queue:1:1,contract_process_queue:1:1,published:1:1"
     command: ["bash", "/var/docker/scripts/wait-for-it.sh", "kafka:9092", "--", "bash",
               "/var/docker/scripts/create-kafka-topics.sh"]
     volumes:

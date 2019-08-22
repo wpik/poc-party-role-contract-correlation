@@ -17,7 +17,7 @@ public class Role {
     @JsonIgnore
     private boolean contractInDb;
     @JsonIgnore
-    private boolean partyInCorrelated;
+    private boolean partyPublished;
     @JsonIgnore
-    private boolean contractInCorrelated;
+    private boolean contractPublished;
 }

@@ -29,15 +29,15 @@ spring:
           destination: contract_process_queue
         contract_process_in:
           destination: contract_process_queue
-#      correlated
-        correlated_in:
-          destination: correlated
-        correlated_out_party:
-          destination: correlated
-        correlated_out_role:
-          destination: correlated
-        correlated_out_contract:
-          destination: correlated
+#      published
+        published_in:
+          destination: published
+        published_out_party:
+          destination: published
+        published_out_role:
+          destination: published
+        published_out_contract:
+          destination: published
       kafka:
         streams:
           binder:
@@ -73,10 +73,10 @@ spring:
             contract_process_in:
               consumer:
                 application-id: contract_process_in_app
-#          correlated
-            correlated_in:
+#          published
+            published_in:
               consumer:
-                application-id: correlated_in_app
+                application-id: published_in_app
 logging:
   level:
     com.github.wpik: debug
