@@ -4,10 +4,7 @@ import com.github.wpik.poc.prc.TemporaryConverter;
 import com.github.wpik.poc.prc.Topics;
 import com.github.wpik.poc.prc.db.RoleRepository;
 import com.github.wpik.poc.prc.events.*;
-import com.github.wpik.poc.prc.events.internal.AreYouInDbEvent;
-import com.github.wpik.poc.prc.events.internal.IAmInDbEvent;
-import com.github.wpik.poc.prc.events.internal.IAmPublishedEvent;
-import com.github.wpik.poc.prc.events.internal.NewTripleEvent;
+import com.github.wpik.poc.prc.events.internal.*;
 import com.github.wpik.poc.prc.model.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 @RequiredArgsConstructor
@@ -44,10 +37,12 @@ public class RoleProcessor {
                 .selectKey((k, v) -> v.getKey())
                 .branch(
                         (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("party")
-                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("party"),
+                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("party")
+                                || v instanceof DeleteTripleEvent && ((DeleteTripleEvent) v).getEntityName().equals("party"),
                         (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("contract")
-                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("contract"),
-                        (k, v) -> v instanceof PublishEvent
+                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("contract")
+                                || v instanceof DeleteTripleEvent && ((DeleteTripleEvent) v).getEntityName().equals("contract"),
+                        (k, v) -> v instanceof PublishEvent || v instanceof UnpublishEvent
                 );
     }
 
@@ -63,11 +58,12 @@ public class RoleProcessor {
             return handleEvent((IAmInDbEvent) event);
         } else if (event instanceof IAmPublishedEvent) {
             return handleEvent((IAmPublishedEvent) event);
+        } else if (event instanceof IAmRemovedFromDbEvent) {
+            return handleEvent((IAmRemovedFromDbEvent) event);
         }
 
         return List.of();
     }
-
 
     private Iterable<AbstractEvent> handleEvent(RoleCreateEvent event) {
         return handleCreateUpdateEvent(event.getPayload());
@@ -114,17 +110,17 @@ public class RoleProcessor {
     private Iterable<AbstractEvent> handleEvent(RoleDeleteEvent event) {
         String roleKey = event.getPayload().getRoleKey();
 
-        Optional<Role> roleInDbOptional = roleRepository.findById(roleKey);
-
-        //FIXME better optional handling
-//        if (roleInDbOptional.isPresent()) {
-//            Role roleInDb = roleInDbOptional.get();
-            //TODO notify party/contract to unpublish themselves
-//        }
-
-        roleRepository.deleteById(roleKey);
-
-        return List.of();
+        return roleRepository
+                .findById(roleKey)
+                .map(role -> {
+                    roleRepository.deleteById(roleKey);
+                    return List.of(
+                            new UnpublishEvent("role", role.getRoleKey()),
+                            new DeleteTripleEvent("party", role.getPartyKey(), role.getRoleKey()),
+                            new DeleteTripleEvent("contract", role.getContractKey(), role.getRoleKey())
+                    );
+                })
+                .orElse(List.of());
     }
 
     private Iterable<AbstractEvent> handleEvent(IAmInDbEvent event) {
@@ -174,5 +170,27 @@ public class RoleProcessor {
 
     private boolean isRolePublishable(Role role) {
         return role.isPartyPublished() && role.isContractPublished();
+    }
+
+    private Iterable<AbstractEvent> handleEvent(IAmRemovedFromDbEvent event) {
+        return roleRepository
+                .findById(event.getRoleKey())
+                .map(role -> {
+                    role.setPartyInDb(false);
+                    role.setPartyPublished(false);
+
+                    //FIXME role may think that another entity is still published
+
+                    roleRepository.save(role);
+
+                    if (event.getEntityName().equals("party")) {
+                        return List.<AbstractEvent>of(new DeleteTripleEvent("contract", role.getContractKey(), role.getRoleKey()));
+                    } else if (event.getEntityName().equals("contract")) {
+                        return List.<AbstractEvent>of(new DeleteTripleEvent("party", role.getPartyKey(), role.getRoleKey()));
+                    } else {
+                        return List.<AbstractEvent>of();
+                    }
+                })
+                .orElse(List.of());
     }
 }
