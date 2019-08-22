@@ -48,6 +48,8 @@ public class RoleProcessor {
             return handleEvent((RoleUpdateEvent) event);
         } else if (event instanceof RoleDeleteEvent) {
             return handleEvent((RoleDeleteEvent) event);
+        } else if (event instanceof IAmInDbEvent) {
+            return handleEvent((IAmInDbEvent) event);
         }
 
         return List.of();
@@ -103,6 +105,27 @@ public class RoleProcessor {
 //        }
 
         roleRepository.deleteById(roleKey);
+
+        return List.of();
+    }
+
+    private Iterable<AbstractEvent> handleEvent(IAmInDbEvent event) {
+        Optional<Role> roleOptional = roleRepository.findById(event.getRoleKey());
+
+        //FIXME better optional handling
+        if (roleOptional.isPresent()) {
+            if (event.getEntityName().equals("party")) {
+                roleOptional.get().setPartyInDb(true);
+                roleRepository.save(roleOptional.get());
+            } else if (event.getEntityName().equals("contract")) {
+                roleOptional.get().setContractInDb(true);
+                roleRepository.save(roleOptional.get());
+            } else {
+                log.error("Event received but unknown entityName, event={}", event);
+            }
+        } else {
+            log.error("Event received but role not in DB, event={}", event);
+        }
 
         return List.of();
     }
