@@ -34,8 +34,10 @@ public class RoleProcessor {
                 .flatMapValues(this::handleRoleEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
-                        (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("party"),
-                        (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("contract"),
+                        (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("party")
+                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("party"),
+                        (k, v) -> v instanceof AreYouInDbEvent && ((AreYouInDbEvent) v).getEntityName().equals("contract")
+                                || v instanceof NewTripleEvent && ((NewTripleEvent) v).getEntityName().equals("contract"),
                         (k, v) -> v instanceof PublishEvent
                 );
     }

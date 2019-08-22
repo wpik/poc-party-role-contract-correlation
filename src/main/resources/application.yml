@@ -18,6 +18,8 @@ spring:
           destination: role_process_queue
         role_process_out_party:
           destination: role_process_queue
+        role_process_out_contract:
+          destination: role_process_queue
         role_process_in:
           destination: role_process_queue
 #      contract

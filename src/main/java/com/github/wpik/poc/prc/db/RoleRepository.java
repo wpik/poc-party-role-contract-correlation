@@ -5,4 +5,6 @@ import org.springframework.data.repository.CrudRepository;
 
 public interface RoleRepository extends CrudRepository<Role, String> {
     Iterable<Role> findByPartyKey(String partyKey);
+
+    Iterable<Role> findByContractKey(String contractKey);
 }

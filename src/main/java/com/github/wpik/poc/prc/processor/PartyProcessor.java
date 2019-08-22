@@ -41,7 +41,7 @@ public class PartyProcessor {
                 .flatMapValues(this::handlePartyEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
-                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent,
+                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent || v instanceof IAmPublishedEvent,
                         (k, v) -> v instanceof PublishEvent || v instanceof UnpublishEvent);
     }
 
