@@ -5,6 +5,7 @@ import com.github.wpik.poc.prc.Topics;
 import com.github.wpik.poc.prc.db.PartyRepository;
 import com.github.wpik.poc.prc.db.RoleRepository;
 import com.github.wpik.poc.prc.events.*;
+import com.github.wpik.poc.prc.events.internal.*;
 import com.github.wpik.poc.prc.model.Party;
 import com.github.wpik.poc.prc.model.Role;
 import lombok.RequiredArgsConstructor;

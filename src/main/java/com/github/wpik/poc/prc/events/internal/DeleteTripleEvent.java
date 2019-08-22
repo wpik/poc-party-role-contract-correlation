@@ -1,5 +1,6 @@
-package com.github.wpik.poc.prc.events;
+package com.github.wpik.poc.prc.events.internal;
 
+import com.github.wpik.poc.prc.events.AbstractEvent;
 import lombok.Data;
 import lombok.NonNull;
 
