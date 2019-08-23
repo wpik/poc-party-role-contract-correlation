@@ -176,6 +176,8 @@ public class RoleProcessor {
         return roleRepository
                 .findById(event.getRoleKey())
                 .map(role -> {
+                    boolean sendRoleUnpublish = role.isPartyPublished() && role.isContractPublished();
+
                     role.setPartyInDb(false);
                     role.setPartyPublished(false);
 
@@ -183,13 +185,17 @@ public class RoleProcessor {
 
                     roleRepository.save(role);
 
-                    if (event.getEntityName().equals("party")) {
-                        return List.<AbstractEvent>of(new DeleteTripleEvent("contract", role.getContractKey(), role.getRoleKey()));
-                    } else if (event.getEntityName().equals("contract")) {
-                        return List.<AbstractEvent>of(new DeleteTripleEvent("party", role.getPartyKey(), role.getRoleKey()));
-                    } else {
-                        return List.<AbstractEvent>of();
+                    List<AbstractEvent> resultEvents = new ArrayList<>();
+                    if (sendRoleUnpublish) {
+                        resultEvents.add(new UnpublishEvent("role", role.getRoleKey()));
                     }
+
+                    if (event.getEntityName().equals("party")) {
+                        resultEvents.add(new DeleteTripleEvent("contract", role.getContractKey(), role.getRoleKey()));
+                    } else if (event.getEntityName().equals("contract")) {
+                        resultEvents.add(new DeleteTripleEvent("party", role.getPartyKey(), role.getRoleKey()));
+                    }
+                    return resultEvents;
                 })
                 .orElse(List.of());
     }
