@@ -1,8 +1,6 @@
 ```
-http :8080/party event=create payload:={"partyKey": "12", "name":"sss"}
-```
-
-```
-curl -v -H "Content-Type: application/json" -d '{"event": "create", "payload": {"partyKey": "12", "name":"sss"}}' localhost:8080/party
-curl -v -H "Content-Type: application/json" -d '{"event": "create", "payload": {"roleKey": "12", "type":1}}' localhost:8080/role
+cd testdata
+./send.sh role single-triple/role1-create.json 
+./send.sh party single-triple/party1-create.json 
+./send.sh contract single-triple/contract1-create.json 
 ```
