@@ -14,6 +14,6 @@ import org.springframework.stereotype.Component;
 public class PublicEventsListener {
     @StreamListener
     public void logPublicEvents(@Input(Topics.PUBLISHED_IN) KStream<String, String> input) {
-        input.foreach((key, value) -> log.info("New published operation: key={}, {}", key, value));
+        input.foreach((key, value) -> log.info("New public operation: key={}, {}", key, value));
     }
 }
