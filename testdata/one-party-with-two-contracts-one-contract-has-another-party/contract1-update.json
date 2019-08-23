@@ -2,7 +2,7 @@
   "event": "ContractUpdateEvent",
   "payload": {
     "contractKey": "ck1",
-    "company": "Company 2",
+    "company": "Company 1 ver 2",
     "active": true
   }
 }

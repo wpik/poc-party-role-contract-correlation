@@ -1,0 +1,9 @@
+{
+  "event": "RoleCreateEvent",
+  "payload": {
+    "roleKey": "rk3",
+    "partyKey": "pk2",
+    "contractKey": "ck2",
+    "type": 1
+  }
+}

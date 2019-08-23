@@ -1,0 +1,6 @@
+{
+  "event": "RoleDeleteEvent",
+  "payload": {
+    "roleKey": "rk3"
+  }
+}

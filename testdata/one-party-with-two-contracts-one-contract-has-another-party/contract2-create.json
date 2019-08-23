@@ -1,0 +1,8 @@
+{
+  "event": "ContractCreateEvent",
+  "payload": {
+    "contractKey": "ck2",
+    "company": "Company 2",
+    "active": true
+  }
+}

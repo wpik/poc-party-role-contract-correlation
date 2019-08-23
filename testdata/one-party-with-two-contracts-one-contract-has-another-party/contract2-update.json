@@ -1,0 +1,8 @@
+{
+  "event": "ContractUpdateEvent",
+  "payload": {
+    "contractKey": "ck2",
+    "company": "Company 2 ver 2",
+    "active": true
+  }
+}

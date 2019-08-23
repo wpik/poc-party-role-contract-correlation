@@ -1,0 +1,7 @@
+{
+  "event": "PartyUpdateEvent",
+  "payload": {
+    "partyKey": "pk2",
+    "name": "Party 2 ver 2"
+  }
+}
