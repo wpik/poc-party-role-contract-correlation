@@ -22,6 +22,8 @@ public class RoleUpdateEvent extends AbstractEvent {
         return payload.getRoleKey();
     }
 
+    //FIXME update event doesn't need partyKey/contractKey
+
     @NonNull
     private Role payload;
 }

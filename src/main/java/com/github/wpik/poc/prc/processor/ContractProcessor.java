@@ -42,7 +42,7 @@ public class ContractProcessor {
                 .flatMapValues(this::handleContractEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
-                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent || v instanceof IAmPublishedEvent,
+                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent || v instanceof IAmPublishedEvent || v instanceof IAmUnpublishedEvent,
                         (k, v) -> v instanceof PublishEvent || v instanceof UnpublishEvent);
     }
 
@@ -152,7 +152,10 @@ public class ContractProcessor {
                     contractRepository.save(contract);
 
                     if (contract.getTriplesCounter() == 0) {
-                        return List.<AbstractEvent>of(new UnpublishEvent("contract", contract.getContractKey()));
+                        return List.of(
+                                new UnpublishEvent("contract", contract.getContractKey()),
+                                new IAmUnpublishedEvent("contract", contract.getContractKey(), event.getRoleKey())
+                        );
                     } else {
                         return List.<AbstractEvent>of();
                     }

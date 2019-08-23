@@ -58,6 +58,8 @@ public class RoleProcessor {
             return handleEvent((IAmInDbEvent) event);
         } else if (event instanceof IAmPublishedEvent) {
             return handleEvent((IAmPublishedEvent) event);
+        } else if (event instanceof IAmUnpublishedEvent) {
+            return handleEvent((IAmUnpublishedEvent) event);
         } else if (event instanceof IAmRemovedFromDbEvent) {
             return handleEvent((IAmRemovedFromDbEvent) event);
         }
@@ -159,6 +161,7 @@ public class RoleProcessor {
                         role.setContractPublished(true);
                         roleRepository.save(role);
                     }
+
                     if (isRolePublishable(role) && !alreadyWasPublishable) {
                         return List.<AbstractEvent>of(new PublishEvent(role.toString()));
                     } else {
@@ -172,16 +175,35 @@ public class RoleProcessor {
         return role.isPartyPublished() && role.isContractPublished();
     }
 
+    private Iterable<AbstractEvent> handleEvent(IAmUnpublishedEvent event) {
+        return roleRepository
+                .findById(event.getRoleKey())
+                .map(role -> {
+                    if (event.getEntityName().equals("party")) {
+                        role.setPartyPublished(false);
+                        roleRepository.save(role);
+                    } else if (event.getEntityName().equals("contract")) {
+                        role.setContractPublished(false);
+                        roleRepository.save(role);
+                    }
+                    return List.<AbstractEvent>of();
+                })
+                .orElse(List.of());
+    }
+
     private Iterable<AbstractEvent> handleEvent(IAmRemovedFromDbEvent event) {
         return roleRepository
                 .findById(event.getRoleKey())
                 .map(role -> {
                     boolean sendRoleUnpublish = role.isPartyPublished() && role.isContractPublished();
 
-                    role.setPartyInDb(false);
-                    role.setPartyPublished(false);
-
-                    //FIXME role may think that another entity is still published
+                    if (event.getEntityName().equals("party")) {
+                        role.setPartyInDb(false);
+                        role.setPartyPublished(false);
+                    } else if (event.getEntityName().equals("contract")) {
+                        role.setContractInDb(false);
+                        role.setContractPublished(false);
+                    }
 
                     roleRepository.save(role);
 

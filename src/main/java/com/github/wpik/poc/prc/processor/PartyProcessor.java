@@ -42,7 +42,7 @@ public class PartyProcessor {
                 .flatMapValues(this::handlePartyEvent)
                 .selectKey((k, v) -> v.getKey())
                 .branch(
-                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent || v instanceof IAmPublishedEvent,
+                        (k, v) -> v instanceof IAmInDbEvent || v instanceof IAmRemovedFromDbEvent || v instanceof IAmPublishedEvent || v instanceof IAmUnpublishedEvent,
                         (k, v) -> v instanceof PublishEvent || v instanceof UnpublishEvent);
     }
 
@@ -152,7 +152,10 @@ public class PartyProcessor {
                     partyRepository.save(party);
 
                     if (party.getTriplesCounter() == 0) {
-                        return List.<AbstractEvent>of(new UnpublishEvent("party", party.getPartyKey()));
+                        return List.of(
+                                new UnpublishEvent("party", party.getPartyKey()),
+                                new IAmUnpublishedEvent("party", party.getPartyKey(), event.getRoleKey())
+                        );
                     } else {
                         return List.<AbstractEvent>of();
                     }
